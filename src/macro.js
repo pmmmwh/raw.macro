@@ -1,8 +1,9 @@
-const path = require("path");
-const fs = require("fs");
-const { createMacro } = require("babel-plugin-macros");
+import fs from "fs";
+import path from "path";
+import { createMacro } from "babel-plugin-macros";
 
-module.exports = createMacro(rawMacros);
+/** @type {(rawPath: string, encoding?: string) => string} */
+export default createMacro(rawMacros);
 
 const RAW_DYNAMIC_VARIABLE_NAME_PREFIX = "__raw_dynamic__";
 
@@ -14,13 +15,15 @@ function rawMacros({ references, state, babel }) {
   };
 
   references.default.forEach((referencePath) => {
-    if (referencePath.parentPath.type === "CallExpression") {
+    if (referencePath.parentPath?.type === "CallExpression") {
       requireRaw({ referencePath, state, babel, usageCounter });
     } else {
       throw new Error(
-        `This is not supported: \`${referencePath
-          .findParent(babel.types.isExpression)
-          .getSource()}\`. Please see the raw.macro documentation`,
+        `This is not supported: \`${
+          referencePath
+            .findParent((path) => babel.types.isExpression(path.node))
+            ?.getSource() ?? "unknown"
+        }\`. Please see the raw.macro documentation`,
       );
     }
   });
