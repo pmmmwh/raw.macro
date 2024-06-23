@@ -1,12 +1,12 @@
 {
   "name": "@pmmmwh/raw.macro",
   "description": "Read file contents at build time, similar to webpack raw-loader",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "type": "module",
   "engines": {
     "node": ">=18.0.0"
   },
-  "source": "src/macro.js",
+  "source": "src/raw.macro.js",
   "main": "./dist/raw.macro.cjs",
   "types": "./dist/raw.macro.d.ts",
   "exports": {
