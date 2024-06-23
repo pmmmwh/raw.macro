@@ -3,12 +3,11 @@ use std::{fs, path::PathBuf};
 use swc_core::common::DUMMY_SP;
 use swc_core::ecma::{
     ast::*,
-    visit::{FoldWith, Fold},
+    visit::{Fold, FoldWith},
 };
 use swc_core::plugin::{
-    plugin_transform,
+    metadata::TransformPluginMetadataContextKind, plugin_transform,
     proxies::TransformPluginProgramMetadata,
-    metadata::TransformPluginMetadataContextKind
 };
 
 #[derive(Serialize, Deserialize)]
@@ -92,7 +91,9 @@ impl Fold for RawMacro {
         let mut mods: Vec<ModuleItem> = mods.fold_children_with(self);
 
         mods.retain(|m| match &m {
-            ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {src, ..})) =>  &src.value != "raw.macro",
+            ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl { src, .. })) => {
+                &src.value != "raw.macro"
+            }
             _ => true,
         });
         mods
@@ -104,11 +105,11 @@ impl Fold for RawMacro {
         let expr = expr.fold_children_with(self);
 
         match &expr {
-            Expr::Call(CallExpr { args, callee: Callee::Expr(cex), ..}) => 
-                // in the feature stable of rust boxed, we can use 
+            Expr::Call(CallExpr { args, callee: Callee::Expr(cex), ..}) =>
+                // in the feature stable of rust boxed, we can use
                 // match someBox { box Expr::Ident(i) => ... }
                 match &**cex {
-                    Expr::Ident(i) => 
+                    Expr::Ident(i) =>
                         if &*i.sym == self.local_sym {
                             let raw_path = match args[0].expr.as_lit() {
                                 Some(lit) => match lit {
@@ -132,13 +133,17 @@ impl Fold for RawMacro {
 #[plugin_transform]
 pub fn process_transform(program: Program, metadata: TransformPluginProgramMetadata) -> Program {
     let config: Config = serde_json::from_str(
-        &metadata.get_transform_plugin_config()
-            .expect("Should provide plugin config")
-    ).unwrap();
+        &metadata
+            .get_transform_plugin_config()
+            .expect("Should provide plugin config"),
+    )
+    .unwrap();
 
     let root_dir = config
         .root_dir
         .expect("Should provide `rootDir` in plugin config");
-    let current_path = &metadata.get_context(&TransformPluginMetadataContextKind::Filename).unwrap();
+    let current_path = &metadata
+        .get_context(&TransformPluginMetadataContextKind::Filename)
+        .unwrap();
     program.fold_with(&mut RawMacro::new(root_dir, current_path.to_string()))
 }
